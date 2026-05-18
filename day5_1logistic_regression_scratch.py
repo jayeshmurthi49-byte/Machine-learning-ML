@@ -20,10 +20,10 @@ class LogisticRegressionScratch:
 
         for epoch in range(self.epochs):
             z = np.dot(X, self.weights) + self.bias
-            y_pred = self.sigmoid(z)
+            y_pred = self.sigmoid(z) 
 
             dw = (1 / n_samples) * np.dot(X.T, (y_pred - y))
-            db = (1 / n_samples) * np.sum(y_pred - y)
+            db = (1 / n_samples) * np.sum(y_pred - y) 
 
             self.weights -= self.lr * dw
             self.bias -= self.lr * db
