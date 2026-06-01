@@ -1,65 +1,57 @@
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.datasets import load_breast_cancer
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score, classification_report
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.datasets import fetch_california_housing
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
 
-# Load data
-data = load_breast_cancer()
-X = data.data
+# Step 1 — Load data
+data = fetch_california_housing()
+
+# Step 2 — Explore
+df = pd.DataFrame(data.data, columns=data.feature_names)
+df["Price"] = data.target
+print("Shape:", df.shape)
+print("\nFirst 5 rows:")
+print(df.head())
+print("\nBasic Stats:")
+print(df.describe())
+
+# Step 3 — Pick one feature: MedInc (Median Income)
+X = data.data[:, 0].reshape(-1, 1)
 y = data.target
 
-# Split
+# Step 4 — Split
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
+print(f"\nTraining size : {X_train.shape[0]}")
+print(f"Test size     : {X_test.shape[0]}")
 
-# Without scaling
-model = KNeighborsClassifier(n_neighbors=5)
+# Step 5 — Train
+model = LinearRegression()
 model.fit(X_train, y_train)
+
+print(f"\nSlope     : {model.coef_[0]:.4f}")
+print(f"Intercept : {model.intercept_:.4f}")
+
+# Step 6 — Predict
 y_pred = model.predict(X_test)
-print(f"Accuracy without scaling : {accuracy_score(y_test, y_pred):.4f}")
 
-# With scaling
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+# Step 7 — Evaluate
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+print(f"\nMSE      : {mse:.4f}")
+print(f"R2 Score : {r2:.4f}")
 
-model_scaled = KNeighborsClassifier(n_neighbors=5)
-model_scaled.fit(X_train_scaled, y_train)
-y_pred_scaled = model_scaled.predict(X_test_scaled)
-print(f"Accuracy with scaling    : {accuracy_score(y_test, y_pred_scaled):.4f}")
-
-# Find best K
-print("\n=== Finding Best K ===")
-for k in [3, 5, 7, 9, 11]:
-    model = KNeighborsClassifier(n_neighbors=k)
-    model.fit(X_train_scaled, y_train)
-    acc = accuracy_score(y_test, model.predict(X_test_scaled))
-    print(f"K={k}  Accuracy={acc:.4f}")
-
-# Best model
-print("\n=== Best Model ===")
-best_model = KNeighborsClassifier(n_neighbors=7)
-best_model.fit(X_train_scaled, y_train)
-y_pred_best = best_model.predict(X_test_scaled)
-print(f"Accuracy : {accuracy_score(y_test, y_pred_best):.4f}")
-print(classification_report(y_test, y_pred_best,
-      target_names=data.target_names))
-
-# Compare all 3 algorithms
-print("\n=== Algorithm Comparison ===")
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import cross_val_score
-
-algorithms = {
-    "KNN           ": KNeighborsClassifier(n_neighbors=7),
-    "Decision Tree ": DecisionTreeClassifier(max_depth=5, random_state=42),
-    "Random Forest ": RandomForestClassifier(n_estimators=100, random_state=42)
-}
-
-for name, algo in algorithms.items():
-    scores = cross_val_score(algo, X, y, cv=5, scoring="accuracy")
-    print(f"{name} : {scores.mean():.4f} +/- {scores.std():.4f}")
+# Step 8 — Plot
+plt.figure(figsize=(8, 5))
+plt.scatter(y_test, y_pred, alpha=0.3, color="steelblue")
+plt.xlabel("Actual Price")
+plt.ylabel("Predicted Price")
+plt.title("Actual vs Predicted — Linear Regression (MedInc only)")
+plt.tight_layout()
+plt.savefig("linear_regression_result.png")
+plt.show()
+print("\nPlot saved as linear_regression_result.png")
