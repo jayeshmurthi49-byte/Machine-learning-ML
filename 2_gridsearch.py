@@ -1,38 +1,34 @@
-def minWindow(s, t):
-    if not t or not s:
-        return ""
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.datasets import load_breast_cancer
+from sklearn.metrics import accuracy_score
 
-    t_count = {}
-    for c in t:
-        t_count[c] = t_count.get(c, 0) + 1
+data = load_breast_cancer()
+X = data.data
+y = data.target
 
-    need = len(t_count)
-    have = 0
-    window = {}
-    left = 0
-    result = ""
-    min_len = float("infinity")
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
 
-    for right in range(len(s)):
-        # add to window
-        c = s[right]
-        window[c] = window.get(c, 0) + 1
+pipeline = Pipeline([
+    ('scaler', StandardScaler()),
+    ('model', RandomForestClassifier(random_state=42))
+])
 
-        # check if condition satisfied
-        if c in t_count and window[c] == t_count[c]:
-            have += 1
+params = {
+    'model__n_estimators': [50, 100, 200],
+    'model__max_depth': [3, 5, 10, None]
+}
 
-        # shrink window when valid
-        while have == need:
-            # update result
-            if (right - left + 1) < min_len:
-                min_len = right - left + 1
-                result = s[left:right+1]
+grid = GridSearchCV(pipeline, params, cv=5,
+                    scoring='accuracy', verbose=1)
+grid.fit(X_train, y_train)
 
-            # remove left character
-            window[s[left]] -= 1
-            if s[left] in t_count and window[s[left]] < t_count[s[left]]:
-                have -= 1
-            left += 1
+print(f"\nBest Params : {grid.best_params_}")
+print(f"Best Score  : {grid.best_score_:.4f}")
 
-    return result
+y_pred = grid.predict(X_test)
+print(f"Test Accuracy : {accuracy_score(y_test, y_pred):.4f}")
